@@ -1,0 +1,40 @@
+name: Python Security Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly scan on Mondays at 2 AM
+
+jobs:
+  security-scan:
+    name: Scan Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run dependency security scan
+        uses: ./
+        with:
+          requirements-file: requirements.txt
+          fail-on-vulnerabilities: true
+          output-format: sarif
+          ignore-vulnerabilities: ""  # Add specific CVE IDs to ignore if needed
+      
+      - name: Upload SARIF results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: security-report.sarif
+      
+      - name: Upload security report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: security-report.sarif
+          retention-days: 30

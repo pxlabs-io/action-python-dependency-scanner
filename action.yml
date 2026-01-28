@@ -1,0 +1,63 @@
+name: 'Python Dependency Scanner'
+description: 'Scans Python dependencies for known security vulnerabilities using safety and pip-audit'
+author: 'Action Factory'
+
+inputs:
+  requirements-file:
+    description: 'Path to requirements file'
+    required: false
+    default: 'requirements.txt'
+  ignore-vulnerabilities:
+    description: 'Comma-separated list of vulnerability IDs to ignore'
+    required: false
+    default: ''
+  fail-on-vulnerabilities:
+    description: 'Fail the action if vulnerabilities are found'
+    required: false
+    default: 'true'
+  output-format:
+    description: 'Output format (json, text, sarif)'
+    required: false
+    default: 'text'
+  working-directory:
+    description: 'Working directory to scan'
+    required: false
+    default: '.'
+
+outputs:
+  vulnerabilities-found:
+    description: 'Number of vulnerabilities found'
+  report-file:
+    description: 'Path to the generated security report'
+  exit-code:
+    description: 'Exit code of the scan (0 = no vulnerabilities, 1 = vulnerabilities found)'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install security tools
+      shell: bash
+      run: |
+        pip install --upgrade pip
+        pip install safety pip-audit
+    
+    - name: Run dependency scanner
+      shell: bash
+      run: python ${{ github.action_path }}/main.py
+      env:
+        INPUT_REQUIREMENTS_FILE: ${{ inputs.requirements-file }}
+        INPUT_IGNORE_VULNERABILITIES: ${{ inputs.ignore-vulnerabilities }}
+        INPUT_FAIL_ON_VULNERABILITIES: ${{ inputs.fail-on-vulnerabilities }}
+        INPUT_OUTPUT_FORMAT: ${{ inputs.output-format }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+        GITHUB_WORKSPACE: ${{ github.workspace }}
+        GITHUB_OUTPUT: ${{ github.env.GITHUB_OUTPUT }}
+
+branding:
+  icon: 'shield'
+  color: 'red'
